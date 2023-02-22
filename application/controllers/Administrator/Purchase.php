@@ -85,6 +85,20 @@ class Purchase extends CI_Controller
         echo json_encode($res);
     }
 
+public function getLots(){
+    $data = json_decode($this->input->raw_input_stream);
+
+    $lots = $this->db->query("
+        select
+          pm.PurchaseMaster_LotNo as display_name
+        from tbl_purchasemaster pm
+        where pm.status = 'a'
+        order by pm.PurchaseMaster_LotNo desc
+    ")->result();
+
+    echo json_encode($lots);
+}
+
     public function getPurchaseDetailsForReturn()
     {
         $data = json_decode($this->input->raw_input_stream);
@@ -336,11 +350,11 @@ class Purchase extends CI_Controller
         $data['title'] = "Purchase Order";
 
         $invoice = $this->mt->generatePurchaseInvoice();
-        $lotNo = $this->mt->generatePurchaseLotNo();
+        //$lotNo = $this->mt->generatePurchaseLotNo();
 
         $data['purchaseId'] = 0;
         $data['invoice'] = $invoice;
-        $data['lot_no'] = $lotNo;
+        //$data['lot_no'] = $lotNo;
         $data['content'] = $this->load->view('Administrator/purchase/purchase_order', $data, TRUE);
         $this->load->view('Administrator/index', $data);
     }
@@ -467,7 +481,17 @@ class Purchase extends CI_Controller
                 $invoice = $this->mt->generatePurchaseInvoice();
             }
 
+            $lot_no = $data->purchase->lot_no;
+            
+            $lot_noCount = $this->db->query("select * from tbl_purchasemaster where PurchaseMaster_LotNo = ?", $lot_no)->num_rows();
+            if ($lot_noCount != 0) {
+               $res = ['success' => false, 'message' => 'Given Lot Number Already Exists'];
+               echo json_encode($res);
+               exit;
+            }
+
             $supplierId = $data->purchase->supplierId;
+            
             if (isset($data->supplier)) {
                 $supplier = (array)$data->supplier;
                 unset($supplier['Supplier_SlNo']);
@@ -491,8 +515,10 @@ class Purchase extends CI_Controller
                     if ($duplicateSupplier->Supplier_Type == 'G') {
                         $supplier["Supplier_Type"] = '';
                     }
+
                     $this->db->where('Supplier_SlNo', $duplicateSupplier->Supplier_SlNo)->update('tbl_supplier', $supplier);
                     $supplierId = $duplicateSupplier->Supplier_SlNo;
+                    
                 } else {
 
                     $supplier['Supplier_Code'] = $this->mt->generateSupplierCode();
@@ -509,7 +535,7 @@ class Purchase extends CI_Controller
             $purchase = array(
                 'Supplier_SlNo'                 => $supplierId,
                 'PurchaseMaster_InvoiceNo'      => $invoice,
-                'PurchaseMaster_LotNo'          => $this->mt->generatePurchaseLotNo(),
+                'PurchaseMaster_LotNo'          => $data->purchase->lot_no,
                 'PurchaseMaster_OrderDate'      => $data->purchase->purchaseDate,
                 'PurchaseMaster_PurchaseFor'    => $data->purchase->purchaseFor,
                 'PurchaseMaster_TotalAmount'    => $data->purchase->total,
@@ -1696,44 +1722,44 @@ class Purchase extends CI_Controller
     function select_supplier()
     {
 ?>
-        <div class="form-group">
-            <label class="col-sm-2 control-label no-padding-right" for="Supplierid"> Select Supplier </label>
-            <div class="col-sm-3">
-                <select name="Supplierid" id="Supplierid" data-placeholder="Choose a Supplier..." class="chosen-select">
-                    <option value=""></option>
-                    <?php
+<div class="form-group">
+    <label class="col-sm-2 control-label no-padding-right" for="Supplierid"> Select Supplier </label>
+    <div class="col-sm-3">
+        <select name="Supplierid" id="Supplierid" data-placeholder="Choose a Supplier..." class="chosen-select">
+            <option value=""></option>
+            <?php
                     $sql = $this->db->query("SELECT * FROM tbl_supplier where Supplier_brinchid='" . $this->brunch . "' order by Supplier_Name desc");
                     $row = $sql->result();
                     foreach ($row as $row) { ?>
-                        <option value="<?php echo $row->Supplier_SlNo; ?>"><?php echo $row->Supplier_Name; ?>
-                            (<?php echo $row->Supplier_Code; ?>)
-                        </option>
-                    <?php } ?>
-                </select>
-            </div>
-        </div>
-    <?php
+            <option value="<?php echo $row->Supplier_SlNo; ?>"><?php echo $row->Supplier_Name; ?>
+                (<?php echo $row->Supplier_Code; ?>)
+            </option>
+            <?php } ?>
+        </select>
+    </div>
+</div>
+<?php
     }
 
     function select_product()
     {
     ?>
-        <div class="form-group">
-            <label class="col-sm-2 control-label no-padding-right" for="Productid"> Select Product </label>
-            <div class="col-sm-3">
-                <select name="Productid" id="Productid" data-placeholder="Choose a Product..." class="chosen-select">
-                    <option value=""></option>
-                    <?php
+<div class="form-group">
+    <label class="col-sm-2 control-label no-padding-right" for="Productid"> Select Product </label>
+    <div class="col-sm-3">
+        <select name="Productid" id="Productid" data-placeholder="Choose a Product..." class="chosen-select">
+            <option value=""></option>
+            <?php
                     $sql = $this->db->query("SELECT * FROM tbl_product order by Product_Name desc");
                     $row = $sql->result();
                     foreach ($row as $row) { ?>
-                        <option value="<?php echo $row->Product_SlNo; ?>"><?php echo $row->Product_Name; ?>
-                            (<?php echo $row->Product_Code; ?>)
-                        </option>
-                    <?php } ?>
-                </select>
-            </div>
-        </div>
+            <option value="<?php echo $row->Product_SlNo; ?>"><?php echo $row->Product_Name; ?>
+                (<?php echo $row->Product_Code; ?>)
+            </option>
+            <?php } ?>
+        </select>
+    </div>
+</div>
 <?php
     }
 

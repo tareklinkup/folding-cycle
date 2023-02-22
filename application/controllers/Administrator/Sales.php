@@ -1324,40 +1324,42 @@ class Sales extends CI_Controller
     function select_customerName()
     {
 ?>
-        <div class="form-group">
-            <label class="col-sm-2 control-label no-padding-right" for="customerID"> Select Customer </label>
-            <div class="col-sm-3">
-                <select name="" id="customerID" data-placeholder="Choose a Customer..." class="chosen-select">
-                    <option value="All">All</option>
-                    <?php
+<div class="form-group">
+    <label class="col-sm-2 control-label no-padding-right" for="customerID"> Select Customer </label>
+    <div class="col-sm-3">
+        <select name="" id="customerID" data-placeholder="Choose a Customer..." class="chosen-select">
+            <option value="All">All</option>
+            <?php
                     $sql = $this->db->query("SELECT * FROM tbl_customer where Customer_brunchid = '" . $this->sbrunch . "' AND Customer_Type = 'Local' order by Customer_Name asc");
                     $row = $sql->result();
                     foreach ($row as $row) { ?>
 
-                        <option value="<?php echo $row->Customer_SlNo; ?>"><?php echo $row->Customer_Name; ?> (<?php echo $row->Customer_Code; ?>)</option>
-                    <?php } ?>
-                </select>
-            </div>
-        </div>
-    <?php
+            <option value="<?php echo $row->Customer_SlNo; ?>"><?php echo $row->Customer_Name; ?>
+                (<?php echo $row->Customer_Code; ?>)</option>
+            <?php } ?>
+        </select>
+    </div>
+</div>
+<?php
     }
     function select_InvCustomerName()
     {
     ?>
-        <div class="form-group">
-            <div class="col-sm-3">
-                <select id="Salestype" class="chosen-select" name="Salestype">
-                    <option value="All">All</option>
-                    <?php
+<div class="form-group">
+    <div class="col-sm-3">
+        <select id="Salestype" class="chosen-select" name="Salestype">
+            <option value="All">All</option>
+            <?php
                     $sql = $this->db->query("SELECT * FROM tbl_customer where Customer_brunchid = '" . $this->sbrunch . "' AND Customer_Type = 'Local' order by Customer_Name asc");
                     $row = $sql->result();
                     foreach ($row as $row) { ?>
 
-                        <option value="<?php echo $row->Customer_SlNo; ?>"><?php echo $row->Customer_Name; ?> (<?php echo $row->Customer_Code; ?>)</option>
-                    <?php } ?>
-                </select>
-            </div>
-        </div>
+            <option value="<?php echo $row->Customer_SlNo; ?>"><?php echo $row->Customer_Name; ?>
+                (<?php echo $row->Customer_Code; ?>)</option>
+            <?php } ?>
+        </select>
+    </div>
+</div>
 <?php
     }
     function sales_customerName()
@@ -2016,6 +2018,7 @@ class Sales extends CI_Controller
     {
         $data = json_decode($this->input->raw_input_stream);
 
+        
         $result = $this->db->query("SELECT
         pm.PurchaseMaster_LotNo,
         pd.*,
@@ -2041,12 +2044,64 @@ class Sales extends CI_Controller
 
         FROM tbl_purchasemaster pm
         LEFT JOIN tbl_purchasedetails pd on pd.PurchaseMaster_IDNo = pm.PurchaseMaster_SlNo
+        LEFT JOIN tbl_product p on p.Product_SlNo = pd.Product_IDNo
+        LEFT JOIN tbl_productcategory pc on pc.ProductCategory_SlNo = p.ProductCategory_ID
         WHERE pm.status = 'a'
         and pd.Product_IDNo = ?
         and pm.PurchaseMaster_BranchID = ?
         ", [$data->productId, $this->session->userdata("BRANCHid")])->result();
 
         echo json_encode($result);
+    }
+
+    public function getLotsStock(){
+        $data = json_decode($this->input->raw_input_stream);
+
+        $stock = $this->db->query("SELECT
+        pm.PurchaseMaster_LotNo,
+        p.Product_Code,
+        p.Product_Name,
+        pc.ProductCategory_Name,
+        pd.*,
+        (
+            SELECT ifnull(sum(sd.SaleDetails_TotalQuantity),0)
+            FROM tbl_saledetails sd
+            WHERE sd.Status = 'a'
+            and sd.SaleDetails_BranchId = 1
+            and sd.Product_IDNo = pd.Product_IDNo
+            and sd.SaleDetails_LotNo = pm.PurchaseMaster_LotNo
+        ) as sale_qty,
+
+        (
+            SELECT ifnull(sum(sd.Free_quantity),0)
+            FROM tbl_saledetails sd
+            WHERE sd.Status = 'a'
+            and sd.SaleDetails_BranchId = 1
+            and sd.FreeProduct_Id = pd.Product_IDNo
+            and sd.FreeProduct_LotNo = pm.PurchaseMaster_LotNo
+        ) as sale_free_qty,
+        
+        (SELECT pd.PurchaseDetails_TotalQuantity - (sale_qty + sale_free_qty)) as current_quantity,
+
+        (select p.Product_Purchase_Rate * current_quantity) as stock_value
+
+        FROM tbl_purchasemaster pm
+        LEFT JOIN tbl_purchasedetails pd on pd.PurchaseMaster_IDNo = pm.PurchaseMaster_SlNo
+        LEFT JOIN tbl_product p on p.Product_SlNo = pd.Product_IDNo
+        LEFT JOIN tbl_productcategory pc on pc.ProductCategory_SlNo = p.ProductCategory_ID
+        WHERE pm.status = 'a'
+        and pm.PurchaseMaster_LotNo = ?
+        and pm.PurchaseMaster_BranchID = ?
+        ", [$data->lot_no, $this->session->userdata("BRANCHid")])->result();
+
+        $res['stock'] = $stock;
+        $res['totalValue'] = array_sum(
+            array_map(function ($product) {
+                return $product->stock_value;
+            }, $stock)
+        );
+        echo json_encode($res);
+
     }
 
     function getSaleLots()

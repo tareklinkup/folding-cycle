@@ -134,6 +134,7 @@ $route['customer_payment_history'] = 'Administrator/Customer/customerPaymentHist
 
 
 $route['get_purchases'] = 'Administrator/Purchase/getPurchases';
+$route['get_lots']    =    'Administrator/Purchase/getLots';
 $route['get_purchasedetails'] = 'Administrator/Purchase/getPurchaseDetails';
 $route['get_purchasedetails_for_return'] = 'Administrator/Purchase/getPurchaseDetailsForReturn';
 $route['add_purchase_return'] = 'Administrator/Purchase/addPurchaseReturn';
@@ -243,6 +244,7 @@ $route['sale_return_details'] = 'Administrator/Sales/saleReturnDetails';
 $route['check_sale_return/(:any)'] = 'Administrator/Sales/checkSaleReturn/$1';
 $route['get_sale_lots'] = 'Administrator/Sales/getSaleLots';
 $route['get_product_lots'] = 'Administrator/Sales/getProductLots';
+$route['get_lots_stock'] = 'Administrator/Sales/getLotsStock';
 
 $route['sale_invoice_print/(:any)'] = 'Administrator/Sales/saleInvoicePrint/$1';
 $route['craditlimit'] = 'Administrator/Sales/craditlimit/';

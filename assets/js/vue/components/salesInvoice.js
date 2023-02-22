@@ -464,7 +464,7 @@ const salesInvoice = Vue.component("sales-invoice", {
                                         )}, Printed by: ${this.sales.AddBy}
                                     </div>
                                     <div class="col-xs-6 text-right">
-                                        Developed by: Link-Up Technologoy, Contact no: 01911978897
+                                       
                                     </div>
                                 </div>
                             </div>
