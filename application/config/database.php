@@ -8,9 +8,9 @@ $db['default'] = array(
 	'dsn'	=> '',
 	'hostname' => 'localhost',
 
-	 'username' => 'root',
-	 'password' => '',
-	 'database' => 'folding-cycle',
+	 'username' => 'bigektuw',
+	 'password' => 'sChzA2HnVel0',
+	 'database' => 'bigektuw_folding-cycle',
 
 // 	'username' => 'root',
 // 	'password' => '',
